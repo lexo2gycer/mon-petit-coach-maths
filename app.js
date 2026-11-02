@@ -30,26 +30,29 @@ function makeExercise() {
   const result = kind === "addition" ? a + b : a - b;
   const resultDigits = String(result).padStart(3, "0").split("").map(Number);
 
+  // Calcul des retenues/emprunts à afficher au-dessus de la colonne qui reçoit
+  // le report. Les colonnes sont indexées C=0, D=1, U=2.
   const carryByColumn = [0, 0, 0];
   let carry = 0;
   const offset = 3 - width;
 
   for (let local = width - 1; local >= 0; local--) {
     const column = offset + local;
+
     if (kind === "addition") {
       const total = aa[local] + bb[local] + carry;
-      const carryOut = Math.floor(total / 10);
+      const carryOut = total >= 10 ? 1 : 0;
       if (column > 0) carryByColumn[column - 1] = carryOut;
       carry = carryOut;
     } else {
-      const top = aa[local] - carry;
-      const borrowOut = top < bb[local] ? 1 : 0;
+      const topAfterBorrow = aa[local] - carry;
+      const borrowOut = topAfterBorrow < bb[local] ? 1 : 0;
       if (column > 0) carryByColumn[column - 1] = borrowOut;
       carry = borrowOut;
     }
   }
 
-  current = { aa, bb, result, resultDigits, width, offset, carryByColumn };
+  current = { a, b, result, aa, bb, resultDigits, width, offset, carryByColumn };
   renderExercise();
 }
 
@@ -68,20 +71,23 @@ function renderExercise() {
     (kind === "addition" ? "Retenues (si besoin)" : "Emprunts (si besoin)") +
     '</div><div class="operation-grid">';
 
+  // Rangée des retenues/emprunts.
   out += '<div class="sign-cell"></div>';
   for (let col = 0; col < 3; col++) {
     const local = col - offset;
     out += local >= 0 && local < width
-      ? `<input class="digit carry" inputmode="numeric" maxlength="1" aria-label="Retenue ou emprunt" data-carry="${col}" placeholder="·">`
+      ? `<input class="digit carry" inputmode="numeric" maxlength="1" aria-label="Retenue ou emprunt colonne ${col}" data-carry="${col}" placeholder="·">`
       : '<div class="empty-cell"></div>';
   }
 
+  // Premier nombre.
   out += '<div class="sign-cell"></div>';
   for (let col = 0; col < 3; col++) {
     const local = col - offset;
     out += `<div class="number-cell">${local >= 0 && local < width ? aa[local] : ""}</div>`;
   }
 
+  // Signe à gauche du deuxième nombre.
   out += `<div class="operator">${kind === "addition" ? "+" : "−"}</div>`;
   for (let col = 0; col < 3; col++) {
     const local = col - offset;
@@ -89,6 +95,8 @@ function renderExercise() {
   }
 
   out += '<div class="rule"></div><div class="sign-cell"></div>';
+
+  // Toujours trois cases de résultat, sans indiquer à l'avance le nombre de chiffres.
   for (let col = 0; col < 3; col++) {
     out += `<input class="digit answer" inputmode="numeric" maxlength="1"
       aria-label="Résultat colonne ${col === 0 ? "centaines" : col === 1 ? "dizaines" : "unités"}"
@@ -112,35 +120,30 @@ function readInputs(selector, attribute) {
 function check() {
   const answers = readInputs(".answer", "answer");
   const carries = readInputs(".carry", "carry");
-  const { resultDigits, carryByColumn, offset } = current;
-  let wrong = false;
+  const { result, carryByColumn, offset } = current;
 
-  // Résultat : la case des centaines peut rester vide si le résultat est inférieur à 100.
-  for (let col = 0; col < 3; col++) {
-    const entered = answers[col] || "";
-    const expected = resultDigits[col];
+  // Compare la valeur numérique, pas le nombre de zéros placés devant.
+  // Ainsi 72, 072 et (case centaines vide + 7 + 2) sont tous acceptés.
+  const enteredText = [answers[0] || "", answers[1] || "", answers[2] || ""].join("");
+  if (!enteredText.trim()) {
+    setFeedback("Écris ton résultat dans les cases avant de vérifier.", false);
+    return;
+  }
 
-    if (expected === 0 && col === 0 && entered === "") {
-      // Centaine non utilisée : case facultative.
-    } else if (entered === "" || Number(entered) !== expected) {
-      wrong = true;
-    }
+  const enteredResult = Number(enteredText);
+  let wrong = !Number.isFinite(enteredResult) || enteredResult !== result;
 
-    // Ne contrôler une retenue que si la colonne cible possède une case visible.
-    // Pour deux chiffres (offset=1), un report des dizaines vers les centaines
-    // devient directement le chiffre des centaines du résultat : aucune case
-    // de retenue supplémentaire ne doit être demandée.
-    const hasVisibleCarryCell = col >= offset;
-    if (hasVisibleCarryCell) {
-      const expectedCarry = carryByColumn[col] || 0;
-      const enteredCarry = carries[col] || "";
-      if (expectedCarry === 1 && enteredCarry !== "1") wrong = true;
-      if (expectedCarry === 0 && enteredCarry !== "" && enteredCarry !== "0") wrong = true;
-    }
+  // Contrôle indépendant des retenues/emprunts visibles.
+  for (let col = offset; col < 3; col++) {
+    const expected = carryByColumn[col] || 0;
+    const entered = carries[col] || "";
+
+    if (expected === 1 && entered !== "1") wrong = true;
+    if (expected === 0 && entered !== "" && entered !== "0") wrong = true;
   }
 
   if (wrong) {
-    setFeedback("Pas tout à fait ! Vérifie chaque colonne et les retenues. Tu peux réessayer. 💪", false);
+    setFeedback("Pas tout à fait ! Vérifie le résultat et les retenues ou les emprunts. Tu peux réessayer. 💪", false);
     return;
   }
 
