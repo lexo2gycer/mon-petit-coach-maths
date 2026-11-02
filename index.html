@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#6558d3">
+  <title>Mon petit coach de maths</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand-mark">✦</div>
+      <div><p class="eyebrow">MON AVENTURE MATHÉMATIQUE</p><h1>Mon petit coach <span>de maths</span></h1></div>
+      <div class="stars" aria-label="Étoiles gagnées"><span>⭐</span><b id="stars">0</b></div>
+    </header>
+
+    <section id="home" class="screen">
+      <div class="welcome card">
+        <div class="mascot" aria-hidden="true">🦉</div>
+        <div><p class="eyebrow">COUCOU, CHAMPIONNE !</p><h2>Prête pour un petit défi ?</h2>
+          <p>Quelques calculs, un peu de concentration et des étoiles à gagner !</p></div>
+      </div>
+      <h2 class="section-title">Choisis ta mission</h2>
+      <div class="mission-grid">
+        <button class="mission addition" data-kind="addition">
+          <span class="mission-icon">＋</span><strong>Mission Addition</strong>
+          <small>Je pose et je calcule</small><span class="pill">À découvrir</span>
+        </button>
+        <button class="mission subtraction" data-kind="subtraction">
+          <span class="mission-icon">−</span><strong>Mission Soustraction</strong>
+          <small>J'apprends à emprunter</small><span class="pill">À découvrir</span>
+        </button>
+      </div>
+      <div class="coming card">
+        <div class="coming-icon">🛍️</div><div><strong>La petite boutique</strong><p>Rendre la monnaie — bientôt !</p></div><span class="lock">🔒</span>
+      </div>
+      <p class="footnote">Astuce : prends ton temps. Ici, on apprend aussi en se trompant. 💜</p>
+    </section>
+
+    <section id="game" class="screen hidden">
+      <button id="back" class="back">← Retour aux missions</button>
+      <div class="game-heading">
+        <div><p class="eyebrow" id="mission-label">MISSION ADDITION</p><h2 id="game-title">À toi de jouer !</h2></div>
+        <div class="level">Niveau <b id="level">1</b></div>
+      </div>
+      <div class="card exercise-card">
+        <div class="exercise-top"><span id="exercise-type" class="pill">Addition</span><span id="progress-label">Défi 1</span></div>
+        <p class="instruction" id="instruction">Pose ton opération dans les colonnes, puis complète les petits calculs.</p>
+        <div class="column-heads"><span>C</span><span>D</span><span>U</span></div>
+        <div id="work-area" class="work-area"></div>
+        <div id="feedback" class="feedback" aria-live="polite"></div>
+        <div class="actions">
+          <button id="check" class="primary">Vérifier mon calcul</button>
+          <button id="solution" class="secondary">Voir un indice</button>
+        </div>
+      </div>
+      <div class="bottom-note">⭐ Une bonne réponse te fait gagner une étoile.</div>
+    </section>
+
+    <section id="result" class="screen hidden">
+      <div class="result-card card">
+        <div class="result-emoji" id="result-emoji">🌟</div>
+        <p class="eyebrow">DÉFI TERMINÉ</p><h2 id="result-title">Bravo !</h2>
+        <p id="result-text">Tu as réussi ton calcul.</p>
+        <div class="result-actions"><button id="again" class="primary">Un autre défi</button><button id="home-button" class="secondary">Retour à l'accueil</button></div>
+      </div>
+    </section>
+    <footer>Fait avec 💜 pour apprendre en s'amusant</footer>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
