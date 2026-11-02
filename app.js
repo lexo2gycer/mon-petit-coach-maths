@@ -18,11 +18,29 @@ function makeExercise() {
   let a, b;
 
   if (kind === "addition") {
-    a = rand(width === 2 ? 21 : 121, width === 2 ? 79 : 799);
-    b = rand(width === 2 ? 11 : 111, width === 2 ? 89 : 899);
+    if (width === 2) {
+      a = rand(21, 79);
+      b = rand(11, 89);
+    } else {
+      a = rand(121, 799);
+      b = rand(111, 899);
+    }
   } else {
-    a = rand(width === 2 ? 31 : 131, width === 2 ? 899 : 999);
-    b = rand(width === 2 ? 12 : 111, Math.min(a - 1, width === 2 ? 89 : 899));
+    // Pour le niveau actuel, aucune soustraction négative :
+    // on choisit d'abord le nombre du haut, puis un nombre inférieur.
+    if (width === 2) {
+      a = rand(31, 89);
+      b = rand(12, Math.min(89, a - 1));
+    } else {
+      a = rand(131, 999);
+      b = rand(111, Math.min(899, a - 1));
+    }
+  }
+
+  // Garde-fou : si les règles de génération évoluent, on refuse
+  // quand même de fabriquer une soustraction négative.
+  if (kind !== "addition" && b > a) {
+    throw new Error("Génération invalide : le deuxième nombre dépasse le premier.");
   }
 
   const aa = String(a).padStart(width, "0").split("").map(Number);
@@ -30,8 +48,8 @@ function makeExercise() {
   const result = kind === "addition" ? a + b : a - b;
   const resultDigits = String(result).padStart(3, "0").split("").map(Number);
 
-  // Calcul des retenues/emprunts à afficher au-dessus de la colonne qui reçoit
-  // le report. Les colonnes sont indexées C=0, D=1, U=2.
+  // Calcul des retenues/emprunts à afficher au-dessus de la colonne qui reçoit le report.
+  // Colonnes : C=0, D=1, U=2.
   const carryByColumn = [0, 0, 0];
   let carry = 0;
   const offset = 3 - width;
@@ -71,7 +89,6 @@ function renderExercise() {
     (kind === "addition" ? "Retenues (si besoin)" : "Emprunts (si besoin)") +
     '</div><div class="operation-grid">';
 
-  // Rangée des retenues/emprunts.
   out += '<div class="sign-cell"></div>';
   for (let col = 0; col < 3; col++) {
     const local = col - offset;
@@ -80,14 +97,12 @@ function renderExercise() {
       : '<div class="empty-cell"></div>';
   }
 
-  // Premier nombre.
   out += '<div class="sign-cell"></div>';
   for (let col = 0; col < 3; col++) {
     const local = col - offset;
     out += `<div class="number-cell">${local >= 0 && local < width ? aa[local] : ""}</div>`;
   }
 
-  // Signe à gauche du deuxième nombre.
   out += `<div class="operator">${kind === "addition" ? "+" : "−"}</div>`;
   for (let col = 0; col < 3; col++) {
     const local = col - offset;
@@ -95,8 +110,6 @@ function renderExercise() {
   }
 
   out += '<div class="rule"></div><div class="sign-cell"></div>';
-
-  // Toujours trois cases de résultat, sans indiquer à l'avance le nombre de chiffres.
   for (let col = 0; col < 3; col++) {
     out += `<input class="digit answer" inputmode="numeric" maxlength="1"
       aria-label="Résultat colonne ${col === 0 ? "centaines" : col === 1 ? "dizaines" : "unités"}"
@@ -120,10 +133,14 @@ function readInputs(selector, attribute) {
 function check() {
   const answers = readInputs(".answer", "answer");
   const carries = readInputs(".carry", "carry");
-  const { result, carryByColumn, offset } = current;
+  const { a, b, result, carryByColumn, offset } = current;
 
-  // Compare la valeur numérique, pas le nombre de zéros placés devant.
-  // Ainsi 72, 072 et (case centaines vide + 7 + 2) sont tous acceptés.
+  // Sécurité pédagogique supplémentaire.
+  if (kind !== "addition" && a < b) {
+    setFeedback("Cet exercice est incorrect : le premier nombre doit être plus grand. Recommence.", false);
+    return;
+  }
+
   const enteredText = [answers[0] || "", answers[1] || "", answers[2] || ""].join("");
   if (!enteredText.trim()) {
     setFeedback("Écris ton résultat dans les cases avant de vérifier.", false);
@@ -137,7 +154,6 @@ function check() {
   for (let col = offset; col < 3; col++) {
     const expected = carryByColumn[col] || 0;
     const entered = carries[col] || "";
-
     if (expected === 1 && entered !== "1") wrong = true;
     if (expected === 0 && entered !== "" && entered !== "0") wrong = true;
   }
