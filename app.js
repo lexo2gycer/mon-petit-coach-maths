@@ -28,27 +28,31 @@ function makeExercise() {
   const aa = String(a).padStart(width, "0").split("").map(Number);
   const bb = String(b).padStart(width, "0").split("").map(Number);
   const result = kind === "addition" ? a + b : a - b;
-  const rr = String(result).padStart(width, "0").split("").map(Number);
 
-  // Retenue/emprunt à inscrire au-dessus de la colonne où il arrive.
-  const carryIn = Array(width).fill(0);
+  // Le résultat est toujours représenté sur trois colonnes C-D-U.
+  const resultDigits = String(result).padStart(3, "0").split("").map(Number);
+
+  // Les retenues/emprunts sont repérés dans les colonnes C-D-U.
+  const carryByColumn = [0, 0, 0];
   let carry = 0;
+  const offset = 3 - width;
 
-  for (let i = width - 1; i >= 0; i--) {
+  for (let local = width - 1; local >= 0; local--) {
+    const column = offset + local;
     if (kind === "addition") {
-      const total = aa[i] + bb[i] + carry;
+      const total = aa[local] + bb[local] + carry;
       const carryOut = Math.floor(total / 10);
-      if (i > 0) carryIn[i - 1] = carryOut;
+      if (column > 0) carryByColumn[column - 1] = carryOut;
       carry = carryOut;
     } else {
-      const top = aa[i] - carry;
-      const borrowOut = top < bb[i] ? 1 : 0;
-      if (i > 0) carryIn[i - 1] = borrowOut;
+      const top = aa[local] - carry;
+      const borrowOut = top < bb[local] ? 1 : 0;
+      if (column > 0) carryByColumn[column - 1] = borrowOut;
       carry = borrowOut;
     }
   }
 
-  current = { aa, bb, rr, width, carryIn };
+  current = { aa, bb, result, resultDigits, width, offset, carryByColumn };
   renderExercise();
 }
 
@@ -62,29 +66,28 @@ function renderExercise() {
     ? "Commence par les unités. Place la retenue au-dessus de la colonne suivante si nécessaire."
     : "Commence par les unités. Indique au-dessus de la colonne de gauche quand tu dois emprunter.";
 
-  const { aa, bb, width } = current;
-  const offset = 3 - width;
+  const { aa, bb, width, offset } = current;
   let out = '<div class="carry-label">' +
     (kind === "addition" ? "Retenues (si besoin)" : "Emprunts (si besoin)") +
     '</div><div class="operation-grid">';
 
-  // Ligne des retenues : trois colonnes C, D, U.
+  // Rangée des retenues : C-D-U. Les cases inutiles restent absentes.
   out += '<div class="sign-cell"></div>';
   for (let col = 0; col < 3; col++) {
     const local = col - offset;
     out += local >= 0 && local < width
-      ? `<input class="digit carry" inputmode="numeric" maxlength="1" aria-label="Retenue ou emprunt" data-carry="${local}" placeholder="·">`
+      ? `<input class="digit carry" inputmode="numeric" maxlength="1" aria-label="Retenue ou emprunt" data-carry="${col}" placeholder="·">`
       : '<div class="empty-cell"></div>';
   }
 
-  // Premier nombre.
+  // Premier nombre, aligné à droite dans les colonnes C-D-U.
   out += '<div class="sign-cell"></div>';
   for (let col = 0; col < 3; col++) {
     const local = col - offset;
     out += `<div class="number-cell">${local >= 0 && local < width ? aa[local] : ""}</div>`;
   }
 
-  // Signe à gauche, puis deuxième nombre.
+  // Signe à gauche du deuxième nombre.
   out += `<div class="operator">${kind === "addition" ? "+" : "−"}</div>`;
   for (let col = 0; col < 3; col++) {
     const local = col - offset;
@@ -93,12 +96,11 @@ function renderExercise() {
 
   out += '<div class="rule"></div><div class="sign-cell"></div>';
 
-  // Résultat aligné sous C, D et U.
+  // Toujours trois cases C-D-U, sans révéler si la centaine sera utilisée.
   for (let col = 0; col < 3; col++) {
-    const local = col - offset;
-    out += local >= 0 && local < width
-      ? `<input class="digit answer" inputmode="numeric" maxlength="1" aria-label="Chiffre du résultat" data-answer="${local}" placeholder="?">`
-      : '<div class="empty-cell"></div>';
+    out += `<input class="digit answer" inputmode="numeric" maxlength="1"
+      aria-label="Résultat colonne ${col === 0 ? "centaines" : col === 1 ? "dizaines" : "unités"}"
+      data-answer="${col}" placeholder="?">`;
   }
 
   out += '</div>';
@@ -118,26 +120,28 @@ function readInputs(selector, attribute) {
 function check() {
   const answers = readInputs(".answer", "answer");
   const carries = readInputs(".carry", "carry");
-  const { rr, width, carryIn } = current;
-  let missing = false;
+  const { resultDigits, carryByColumn } = current;
   let wrong = false;
 
-  for (let i = 0; i < width; i++) {
-    if (!answers[i]) missing = true;
-    else if (Number(answers[i]) !== rr[i]) wrong = true;
+  // La case des centaines peut rester vide si le résultat est inférieur à 100.
+  for (let col = 0; col < 3; col++) {
+    const entered = answers[col] || "";
+    const expected = resultDigits[col];
 
-    const expected = carryIn[i] || 0;
-    const entered = carries[i] || "";
-    if (expected === 1 && entered !== "1") wrong = true;
-    if (expected === 0 && entered !== "" && entered !== "0") wrong = true;
+    if (expected === 0 && col === 0 && entered === "") {
+      // Une centaine non utilisée n'a pas besoin d'être saisie.
+    } else if (entered === "" || Number(entered) !== expected) {
+      wrong = true;
+    }
+
+    const expectedCarry = carryByColumn[col] || 0;
+    const enteredCarry = carries[col] || "";
+    if (expectedCarry === 1 && enteredCarry !== "1") wrong = true;
+    if (expectedCarry === 0 && enteredCarry !== "" && enteredCarry !== "0") wrong = true;
   }
 
-  if (missing) {
-    setFeedback("Complète tous les chiffres du résultat avant de vérifier.", false);
-    return;
-  }
   if (wrong) {
-    setFeedback("Pas tout à fait ! Regarde les colonnes et les retenues. Tu peux réessayer. 💪", false);
+    setFeedback("Pas tout à fait ! Vérifie chaque colonne et les retenues. Tu peux réessayer. 💪", false);
     return;
   }
 
