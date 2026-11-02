@@ -56,4 +56,65 @@ footer{margin-top:auto;text-align:center;padding-top:30px;color:#a09cb5;font-siz
  .app{padding:18px 14px}.topbar h1{font-size:17px}.welcome{padding:17px;gap:10px}.mascot{font-size:45px;min-width:52px}.welcome h2{font-size:18px}.mission{min-height:165px;padding:14px}.mission strong{font-size:14px}.exercise-card{padding:18px 12px}
  .column-heads,.work-area{max-width:100%}.column-heads{grid-template-columns:23px repeat(7,minmax(0,1fr));gap:3px;font-size:10px}.work-area>.carry-label{padding-left:27px}.operation-grid{grid-template-columns:23px repeat(7,minmax(0,1fr));gap:8px 3px}.operation-grid .number-cell{height:42px;font-size:20px}.operation-grid .operator{min-height:42px;font-size:22px}.digit{height:40px;font-size:18px;border-radius:7px}.operation-grid .digit.carry{height:35px;font-size:16px}.operation-grid .digit.answer{height:42px;font-size:19px}.actions{flex-direction:column}.secondary{width:100%}
 }
+/* MODULE MULTIPLICATION */
+
+.mission.multiplication {
+  background: #f1efff;
+}
+
+.multiplication .mission-icon {
+  color: var(--purple);
+}
+
+.table-display {
+  margin: 18px 0;
+  padding: 14px;
+  background: #fbfaff;
+  border-radius: 14px;
+}
+
+.table-display strong {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 18px;
+}
+
+.table-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.table-list span {
+  display: block;
+  padding: 10px 5px;
+  text-align: center;
+  background: #f0edff;
+  border-radius: 9px;
+  font-size: 14px;
+}
+
+.table-list b {
+  color: var(--purple);
+}
+
+.method-box {
+  margin: 16px 0;
+  padding: 15px;
+  background: #f1efff;
+  border-radius: 14px;
+  line-height: 1.6;
+}
+
+@media(max-width:480px) {
+  .table-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .table-list span {
+    font-size: 13px;
+    padding: 9px 3px;
+  }
+}
 html{scroll-behavior:smooth}input.digit{touch-action:manipulation}
