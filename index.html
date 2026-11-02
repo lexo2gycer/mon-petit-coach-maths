@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#6558d3">
   <title>Mon petit coach de maths</title>
-  <link rel="stylesheet" href="style.css?v=20261102-million">
+  <link rel="stylesheet" href="style.css?v=20261103-multiplications-v2">
 </head>
 <body>
   <main class="app">
@@ -14,6 +14,7 @@
       <div><p class="eyebrow">MON AVENTURE MATHÉMATIQUE</p><h1>Mon petit coach <span>de maths</span></h1></div>
       <div class="stars" aria-label="Étoiles gagnées"><span>⭐</span><b id="stars">0</b></div>
     </header>
+
     <section id="home" class="screen">
       <div class="welcome card">
         <div class="mascot" aria-hidden="true">🦉</div>
@@ -22,13 +23,17 @@
       </div>
       <h2 class="section-title">Choisis ta mission</h2>
       <div class="mission-grid">
-        <button class="mission addition" data-kind="addition">
+        <button class="mission addition" data-kind="addition" type="button">
           <span class="mission-icon">＋</span><strong>Mission Addition</strong>
           <small>Je pose et je calcule</small><span class="pill">À découvrir</span>
         </button>
-        <button class="mission subtraction" data-kind="subtraction">
+        <button class="mission subtraction" data-kind="subtraction" type="button">
           <span class="mission-icon">−</span><strong>Mission Soustraction</strong>
           <small>J'apprends à emprunter</small><span class="pill">À découvrir</span>
+        </button>
+        <button class="mission multiplication" data-kind="multiplication" type="button">
+          <span class="mission-icon">×</span><strong>Mission Multiplication</strong>
+          <small>Je découvre les tables et les calculs posés</small><span class="pill">Nouveau !</span>
         </button>
       </div>
       <div class="coming card">
@@ -36,8 +41,31 @@
       </div>
       <p class="footnote">Astuce : prends ton temps. Ici, on apprend aussi en se trompant. 💜</p>
     </section>
+
+    <section id="multiplication-menu" class="screen hidden">
+      <button id="multiplication-back" class="back" type="button">← Retour aux missions</button>
+      <div class="game-heading">
+        <div><p class="eyebrow">MISSION MULTIPLICATION</p><h2>Choisis ton entraînement</h2></div>
+        <div class="level">Tous les niveaux</div>
+      </div>
+      <div class="card multiplication-panel">
+        <h3>Les tables de multiplication</h3>
+        <p>Choisis librement une table. Tu peux la revoir autant de fois que tu veux.</p>
+        <div id="table-buttons" class="table-buttons"></div>
+        <div class="multiplication-actions"><button id="mixed-tables" class="primary" type="button">Tables mélangées</button></div>
+      </div>
+      <div class="card multiplication-panel">
+        <h3>Les multiplications posées</h3>
+        <p>Apprends la méthode, puis entraîne-toi à poser tes calculs.</p>
+        <div class="level-buttons">
+          <button class="level-choice" data-written="1" type="button"><b>Niveau 1</b><span>Un nombre × un chiffre (2 à 5)</span></button>
+          <button class="level-choice" data-written="2" type="button"><b>Niveau 2</b><span>Un nombre × un chiffre (6 à 9)</span></button>
+        </div>
+      </div>
+    </section>
+
     <section id="game" class="screen hidden">
-      <button id="back" class="back">← Retour aux missions</button>
+      <button id="back" class="back" type="button">← Retour</button>
       <div class="game-heading">
         <div><p class="eyebrow" id="mission-label">MISSION ADDITION</p><h2 id="game-title">À toi de jouer !</h2></div>
         <div class="level">Niveau <b id="level">1</b></div>
@@ -45,26 +73,33 @@
       <div class="card exercise-card">
         <div class="exercise-top"><span id="exercise-type" class="pill">Addition</span><span id="progress-label">Défi 1</span></div>
         <p class="instruction" id="instruction">Pose ton opération dans les colonnes, puis complète les petits calculs.</p>
-        <div class="column-heads"><span></span><span>M</span><span>CM</span><span>DM</span><span>UM</span><span>C</span><span>D</span><span>U</span></div>
+        <div id="method-box" class="method-box hidden"></div>
+        <div id="table-display" class="table-display hidden"></div>
+        <div id="column-heads" class="column-heads"><span></span><span>M</span><span>CM</span><span>DM</span><span>UM</span><span>C</span><span>D</span><span>U</span></div>
         <div id="work-area" class="work-area"></div>
         <div id="feedback" class="feedback" aria-live="polite"></div>
         <div class="actions">
-          <button id="check" class="primary">Vérifier mon calcul</button>
-          <button id="solution" class="secondary">Voir un indice</button>
+          <button id="check" class="primary" type="button">Vérifier mon calcul</button>
+          <button id="solution" class="secondary" type="button">Voir un indice</button>
+        </div>
+        <div id="review-row" class="review-row hidden">
+          <button id="review-table" class="secondary" type="button">Revoir cette table</button>
+          <button id="back-multiplications" class="secondary" type="button">Choisir un autre entraînement</button>
         </div>
       </div>
       <div class="bottom-note">⭐ Une bonne réponse te fait gagner une étoile.</div>
     </section>
+
     <section id="result" class="screen hidden">
       <div class="result-card card">
         <div class="result-emoji" id="result-emoji">🌟</div>
         <p class="eyebrow">DÉFI TERMINÉ</p><h2 id="result-title">Bravo !</h2>
         <p id="result-text">Tu as réussi ton calcul.</p>
-        <div class="result-actions"><button id="again" class="primary">Un autre défi</button><button id="home-button" class="secondary">Retour à l'accueil</button></div>
+        <div class="result-actions"><button id="again" class="primary" type="button">Un autre défi</button><button id="home-button" class="secondary" type="button">Retour à l'accueil</button></div>
       </div>
     </section>
     <footer>Fait avec 💜 pour apprendre en s'amusant</footer>
   </main>
-  <script src="app.js?v=20261102-million"></script>
+  <script src="app.js?v=20261103-multiplications-v2"></script>
 </body>
 </html>
