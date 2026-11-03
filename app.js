@@ -235,53 +235,79 @@ function renderDecimalExercise() {
   setupGameHeading(true);
   $("column-heads").classList.add("hidden");
 
-  const makeRow = (value, sign = "") => {
-    const p = decimalParts(value);
-    const whole = String(p.whole).padStart(6, " ");
-    const fraction = String(p.fraction).padStart(2, "0");
+  const aDigits = String(current.a).padStart(8, "0").split("").map(Number);
+  const bDigits = String(current.b).padStart(8, "0").split("").map(Number);
 
-    return `<div class="decimal-row">
+  const marks = Array(8).fill(0);
+  let carry = 0;
+
+  for (let i = 7; i >= 0; i--) {
+    if (kind === "addition") {
+      carry = aDigits[i] + bDigits[i] + carry >= 10 ? 1 : 0;
+    } else {
+      carry = aDigits[i] - carry < bDigits[i] ? 1 : 0;
+    }
+
+    if (i > 0) marks[i - 1] = carry;
+  }
+
+  current.carryByColumn = marks;
+
+  const makeRow = (digits, sign = "") => `
+    <div class="decimal-row">
       <span class="decimal-sign">${sign}</span>
-      ${whole.split("").map(ch =>
-        `<span class="decimal-digit">${ch.trim()}</span>`).join("")}
+      ${digits.slice(0, 6).map(d => `<span class="decimal-digit">${d}</span>`).join("")}
       <span class="decimal-comma">,</span>
-      <span class="decimal-digit">${fraction[0]}</span>
-      <span class="decimal-digit">${fraction[1]}</span>
+      ${digits.slice(6).map(d => `<span class="decimal-digit">${d}</span>`).join("")}
     </div>`;
-  };
 
-  const carries = `<div class="decimal-row decimal-carries">
-    <span class="decimal-sign"></span>
-    ${Array.from({ length: 6 }, () => '<span></span>').join("")}
-    <span></span><span></span><span></span>
-  </div>`;
+  const markLabel = kind === "addition"
+    ? "Retenues (si besoin)"
+    : "Emprunts (si besoin)";
 
-  const answer = `<div class="decimal-row decimal-answer">
-    <span class="decimal-sign"></span>
-    ${Array.from({ length: 6 }, (_, i) =>
-      `<input class="digit decimal-input answer" inputmode="numeric"
-        maxlength="1" data-dec-answer="${i}">`).join("")}
-    <span class="decimal-comma">,</span>
-    <input class="digit decimal-input answer" inputmode="numeric"
-      maxlength="1" data-dec-answer="6">
-    <input class="digit decimal-input answer" inputmode="numeric"
-      maxlength="1" data-dec-answer="7">
-  </div>`;
+  const marksRow = `
+    <div class="carry-label">${markLabel}</div>
+    <div class="decimal-row decimal-carries">
+      <span></span>
+      ${Array.from({length: 6}, (_, i) =>
+        `<input class="decimal-carry" inputmode="numeric"
+        maxlength="1" data-dec-carry="${i}" placeholder="·">`
+      ).join("")}
+      <span></span>
+      ${Array.from({length: 2}, (_, i) =>
+        `<input class="decimal-carry" inputmode="numeric"
+        maxlength="1" data-dec-carry="${i + 6}" placeholder="·">`
+      ).join("")}
+    </div>`;
 
-  $("work-area").innerHTML = `<div class="decimal-work">
-    <div class="carry-label">Pose ton calcul en alignant les virgules</div>
-    ${carries}
-    ${makeRow(current.a)}
-    ${makeRow(current.b, kind === "addition" ? "+" : "−")}
-    <div class="decimal-rule"></div>
-    ${answer}
-  </div>`;
+  const answerRow = `
+    <div class="decimal-row decimal-answer">
+      <span></span>
+      ${Array.from({length: 6}, (_, i) =>
+        `<input class="digit decimal-input answer"
+        inputmode="numeric" maxlength="1"
+        data-dec-answer="${i}" placeholder="?">`
+      ).join("")}
+      <span class="decimal-comma">,</span>
+      ${Array.from({length: 2}, (_, i) =>
+        `<input class="digit decimal-input answer"
+        inputmode="numeric" maxlength="1"
+        data-dec-answer="${i + 6}" placeholder="?">`
+      ).join("")}
+    </div>`;
 
-  $("instruction").textContent = selectedLevel === 1
-    ? "Aligne les virgules. Ici, on travaille avec les dixièmes."
-    : selectedLevel === 2
-      ? "Aligne bien les virgules : les dixièmes et les centièmes doivent rester dans leur colonne."
-      : "Aligne les virgules et pense aux retenues ou aux échanges entre les colonnes.";
+  $("work-area").innerHTML = `
+    <div class="decimal-work">
+      ${marksRow}
+      ${makeRow(aDigits)}
+      ${makeRow(bDigits, kind === "addition" ? "+" : "−")}
+      <div class="decimal-rule"></div>
+      ${answerRow}
+    </div>`;
+
+  $("instruction").textContent = kind === "addition"
+    ? "Commence par les centièmes. Inscris les retenues au-dessus des colonnes concernées."
+    : "Commence par les centièmes. Si nécessaire, emprunte à la colonne de gauche et indique-le au-dessus.";
 
   resetFeedback();
 }
@@ -387,29 +413,36 @@ function checkDecimal() {
   const fields = [...document.querySelectorAll("[data-dec-answer]")];
   const chars = fields.map(e => e.value.trim());
 
-  if (chars.every(x => x === "")) {
-    setFeedback("Complète les cases du résultat avant de vérifier.", false);
-    return;
-  }
-
   if (chars.some(x => x !== "" && !/^\d$/.test(x))) {
     setFeedback("Écris un seul chiffre par case.", false);
     return;
   }
 
-  const entered =
-    Number(chars.slice(0, 6).join("") || 0) * 100 +
-    Number((chars[6] || "0") + (chars[7] || "0"));
-
-  if (entered !== current.result) {
-    setFeedback(
-      "Pas tout à fait ! Vérifie les colonnes et la virgule. Tu peux réessayer. 💪",
-      false
-    );
+  if (chars.every(x => x === "")) {
+    setFeedback("Complète le résultat avant de vérifier.", false);
     return;
   }
 
-  winChallenge("Bravo ! Tu as bien aligné les virgules et trouvé le résultat.");
+  const entered = Number(chars.join("") || 0);
+  let wrong = entered !== current.result;
+
+  const carryInputs = [...document.querySelectorAll("[data-dec-carry]")];
+
+  for (const input of carryInputs) {
+    const index = Number(input.dataset.decCarry);
+    const expected = current.carryByColumn[index] || 0;
+    const value = input.value.trim();
+
+    if (expected === 1 && value !== "1") wrong = true;
+    if (expected === 0 && value !== "" && value !== "0") wrong = true;
+  }
+
+  if (wrong) {
+    setFeedback("Vérifie ton résultat et les retenues ou les emprunts. 💪", false);
+    return;
+  }
+
+  winChallenge("Bravo ! Ton résultat et tes retenues ou emprunts sont corrects.");
 }
 
 function hint() {
