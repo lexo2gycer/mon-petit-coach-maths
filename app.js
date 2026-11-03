@@ -235,17 +235,18 @@ function renderDecimalExercise() {
   setupGameHeading(true);
   $("column-heads").classList.add("hidden");
 
-  const aDigits = String(current.a).padStart(8, "0").split("").map(Number);
-  const bDigits = String(current.b).padStart(8, "0").split("").map(Number);
+  const aDigits = String(current.a).padStart(8, "0").split("");
+  const bDigits = String(current.b).padStart(8, "0").split("");
 
+  // Calcule les retenues ou les emprunts, de droite à gauche.
   const marks = Array(8).fill(0);
   let carry = 0;
 
   for (let i = 7; i >= 0; i--) {
     if (kind === "addition") {
-      carry = aDigits[i] + bDigits[i] + carry >= 10 ? 1 : 0;
+      carry = Number(aDigits[i]) + Number(bDigits[i]) + carry >= 10 ? 1 : 0;
     } else {
-      carry = aDigits[i] - carry < bDigits[i] ? 1 : 0;
+      carry = Number(aDigits[i]) - carry < Number(bDigits[i]) ? 1 : 0;
     }
 
     if (i > 0) marks[i - 1] = carry;
@@ -253,13 +254,28 @@ function renderDecimalExercise() {
 
   current.carryByColumn = marks;
 
-  const makeRow = (digits, sign = "") => `
-    <div class="decimal-row">
-      <span class="decimal-sign">${sign}</span>
-      ${digits.slice(0, 6).map(d => `<span class="decimal-digit">${d}</span>`).join("")}
-      <span class="decimal-comma">,</span>
-      ${digits.slice(6).map(d => `<span class="decimal-digit">${d}</span>`).join("")}
-    </div>`;
+  // Cache uniquement les zéros inutiles avant la virgule.
+  // Les zéros après la virgule restent visibles.
+  const makeRow = (digits, sign = "") => {
+    const wholeDigits = digits.slice(0, 6);
+    let firstSignificant = wholeDigits.findIndex(d => d !== "0");
+
+    if (firstSignificant === -1) firstSignificant = 5;
+
+    return `
+      <div class="decimal-row">
+        <span class="decimal-sign">${sign}</span>
+        ${wholeDigits.map((d, i) =>
+          `<span class="decimal-digit">${
+            i < firstSignificant ? "" : d
+          }</span>`
+        ).join("")}
+        <span class="decimal-comma">,</span>
+        ${digits.slice(6).map(d =>
+          `<span class="decimal-digit">${d}</span>`
+        ).join("")}
+      </div>`;
+  };
 
   const markLabel = kind === "addition"
     ? "Retenues (si besoin)"
@@ -269,30 +285,30 @@ function renderDecimalExercise() {
     <div class="carry-label">${markLabel}</div>
     <div class="decimal-row decimal-carries">
       <span></span>
-      ${Array.from({length: 6}, (_, i) =>
+      ${Array.from({ length: 6 }, (_, i) =>
         `<input class="decimal-carry" inputmode="numeric"
-        maxlength="1" data-dec-carry="${i}" placeholder="·">`
+          maxlength="1" data-dec-carry="${i}" placeholder="·">`
       ).join("")}
       <span></span>
-      ${Array.from({length: 2}, (_, i) =>
+      ${Array.from({ length: 2 }, (_, i) =>
         `<input class="decimal-carry" inputmode="numeric"
-        maxlength="1" data-dec-carry="${i + 6}" placeholder="·">`
+          maxlength="1" data-dec-carry="${i + 6}" placeholder="·">`
       ).join("")}
     </div>`;
 
   const answerRow = `
     <div class="decimal-row decimal-answer">
       <span></span>
-      ${Array.from({length: 6}, (_, i) =>
+      ${Array.from({ length: 6 }, (_, i) =>
         `<input class="digit decimal-input answer"
-        inputmode="numeric" maxlength="1"
-        data-dec-answer="${i}" placeholder="?">`
+          inputmode="numeric" maxlength="1"
+          data-dec-answer="${i}" placeholder="?">`
       ).join("")}
       <span class="decimal-comma">,</span>
-      ${Array.from({length: 2}, (_, i) =>
+      ${Array.from({ length: 2 }, (_, i) =>
         `<input class="digit decimal-input answer"
-        inputmode="numeric" maxlength="1"
-        data-dec-answer="${i + 6}" placeholder="?">`
+          inputmode="numeric" maxlength="1"
+          data-dec-answer="${i + 6}" placeholder="?">`
       ).join("")}
     </div>`;
 
@@ -305,9 +321,17 @@ function renderDecimalExercise() {
       ${answerRow}
     </div>`;
 
+  $("method-box").innerHTML = kind === "addition"
+    ? `<strong>Petit rappel : l'addition décimale</strong>
+       <p>Aligne bien les virgules. Commence par les centièmes, puis les dixièmes et les unités. Quand une colonne donne 10 ou plus, reporte une retenue à gauche.</p>`
+    : `<strong>Petit rappel : la soustraction décimale</strong>
+       <p>Aligne bien les virgules. Commence par les centièmes. Si le chiffre du haut est trop petit, emprunte une unité à la colonne de gauche.</p>`;
+
+  $("method-box").classList.remove("hidden");
+
   $("instruction").textContent = kind === "addition"
     ? "Commence par les centièmes. Inscris les retenues au-dessus des colonnes concernées."
-    : "Commence par les centièmes. Si nécessaire, emprunte à la colonne de gauche et indique-le au-dessus.";
+    : "Commence par les centièmes. Si nécessaire, indique les emprunts au-dessus des colonnes concernées.";
 
   resetFeedback();
 }
@@ -423,7 +447,11 @@ function checkDecimal() {
     return;
   }
 
-  const entered = Number(chars.join("") || 0);
+  // Chaque case conserve sa position :
+  // une case vide à gauche vaut zéro, sans décaler les autres chiffres.
+  const enteredDigits = chars.map(x => x === "" ? "0" : x);
+  const entered = Number(enteredDigits.join(""));
+
   let wrong = entered !== current.result;
 
   const carryInputs = [...document.querySelectorAll("[data-dec-carry]")];
@@ -438,7 +466,10 @@ function checkDecimal() {
   }
 
   if (wrong) {
-    setFeedback("Vérifie ton résultat et les retenues ou les emprunts. 💪", false);
+    setFeedback(
+      "Vérifie ton résultat et les retenues ou les emprunts. Tu peux réessayer ! 💪",
+      false
+    );
     return;
   }
 
