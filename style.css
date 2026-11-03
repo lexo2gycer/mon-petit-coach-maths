@@ -653,6 +653,144 @@ button {
   margin: 8px 0;
 }
 
+/* NOUVEAU : MULTIPLICATIONS DÉCIMALES POSÉES */
+
+.decimal-mult-work {
+  width: 100%;
+  max-width: 390px;
+  margin: 12px auto 18px;
+  padding: 16px 10px;
+  background: #fbfaff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow-x: auto;
+}
+
+.decimal-mult-original {
+  text-align: center;
+  font-size: 21px;
+  font-weight: 900;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.decimal-mult-explanation {
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.decimal-mult-label {
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+  margin: 8px 0;
+}
+
+.decimal-mult-grid {
+  display: grid;
+  grid-template-columns: 22px repeat(6, minmax(0, 1fr));
+  gap: 7px 4px;
+  align-items: center;
+  width: 100%;
+  max-width: 310px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.dm-sign {
+  color: var(--purple);
+  font-size: 21px;
+  font-weight: 900;
+  display: grid;
+  place-items: center;
+  min-height: 38px;
+}
+
+.dm-number {
+  min-width: 0;
+  min-height: 38px;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--ink);
+}
+
+.decimal-mult-carry {
+  width: 100%;
+  min-width: 0;
+  height: 32px;
+  border: 1.5px solid #f0dfc7;
+  border-radius: 7px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 900;
+  color: #d17b27;
+  background: #fffaf2;
+  padding: 0;
+}
+
+.decimal-mult-carry:focus {
+  outline: 3px solid #d17b2733;
+  border-color: #d17b27;
+}
+
+.dm-rule {
+  grid-column: 1 / -1;
+  border-top: 2px solid var(--ink);
+  margin: 3px 0 5px;
+}
+
+.dm-answer-cell {
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+  border: 1.5px solid #dedbed;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 19px;
+  font-weight: 900;
+  color: var(--ink);
+  background: #fff;
+  padding: 0;
+}
+
+.dm-answer-cell:focus {
+  outline: 3px solid #6558d333;
+  border-color: var(--purple);
+}
+
+.decimal-mult-input {
+  width: 100%;
+  min-width: 0;
+}
+
+.dm-comma {
+  position: relative;
+}
+
+.dm-comma::after {
+  content: ",";
+  position: absolute;
+  right: -4px;
+  bottom: -3px;
+  font-size: 21px;
+  font-weight: 900;
+  color: var(--purple);
+}
+
+.decimal-mult-comma-help {
+  text-align: center;
+  color: var(--purple);
+  font-size: 12px;
+  font-weight: 800;
+  margin-top: 12px;
+  line-height: 1.5;
+}
+
 /* CORRECTIONS ET BOUTONS */
 
 .feedback {
@@ -869,6 +1007,34 @@ footer {
   .decimal-digit {
     font-size: 17px;
   }
+
+  .decimal-mult-work {
+    padding: 13px 7px;
+  }
+
+  .decimal-mult-grid {
+    gap: 6px 3px;
+    max-width: 290px;
+  }
+
+  .dm-number {
+    font-size: 18px;
+    min-height: 35px;
+  }
+
+  .decimal-mult-carry {
+    height: 30px;
+    font-size: 14px;
+  }
+
+  .dm-answer-cell {
+    height: 39px;
+    font-size: 17px;
+  }
+
+  .dm-comma::after {
+    font-size: 19px;
+  }
 }
 
 html {
@@ -878,6 +1044,7 @@ html {
 input.digit {
   touch-action: manipulation;
 }
+
 .decimal-carry {
   width: 100%;
   min-width: 0;
