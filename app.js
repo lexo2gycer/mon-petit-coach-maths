@@ -238,7 +238,6 @@ function renderDecimalExercise() {
   const aDigits = String(current.a).padStart(8, "0").split("");
   const bDigits = String(current.b).padStart(8, "0").split("");
 
-  // Calcule les retenues ou les emprunts, de droite à gauche.
   const marks = Array(8).fill(0);
   let carry = 0;
 
@@ -254,8 +253,6 @@ function renderDecimalExercise() {
 
   current.carryByColumn = marks;
 
-  // Cache uniquement les zéros inutiles avant la virgule.
-  // Les zéros après la virgule restent visibles.
   const makeRow = (digits, sign = "") => {
     const wholeDigits = digits.slice(0, 6);
     let firstSignificant = wholeDigits.findIndex(d => d !== "0");
@@ -350,7 +347,9 @@ function setupGameHeading(isDecimal) {
 
   $("exercise-type").textContent = kind === "addition"
     ? "Addition"
-    : "Soustraction";
+    : kind === "subtraction"
+      ? "Soustraction"
+      : "Multiplication";
 
   $("level").textContent = isDecimal
     ? `Décimal ${selectedLevel}`
@@ -447,8 +446,6 @@ function checkDecimal() {
     return;
   }
 
-  // Chaque case conserve sa position :
-  // une case vide à gauche vaut zéro, sans décaler les autres chiffres.
   const enteredDigits = chars.map(x => x === "" ? "0" : x);
   const entered = Number(enteredDigits.join(""));
 
@@ -654,53 +651,176 @@ function makeMultiplicationExercise() {
     renderWrittenMultiplication(a, b);
 
   } else {
-    const level = writtenLevel;
-    let a, b, answer;
-
-    if (level === 1) {
-      a = rand(12, 49) / 10;
-      b = rand(2, 4);
-      answer = a * b;
-    } else if (level === 2) {
-      a = rand(105, 399) / 100;
-      b = rand(2, 5);
-      answer = a * b;
-    } else {
-      a = rand(12, 35) / 10;
-      b = rand(12, 25) / 10;
-      answer = Number((a * b).toFixed(2));
-    }
-
-    current = {
-      a,
-      b,
-      result: answer,
-      type: "decimal-mult"
-    };
-
-    $("game-title").textContent = "Multiplie les nombres décimaux";
-
-    $("instruction").textContent =
-      level === 1
-        ? "Multiplie les dixièmes par un nombre entier."
-        : level === 2
-          ? "Attention aux centièmes : pense à la virgule dans le résultat."
-          : "Deux nombres ont une virgule. Estime le résultat, puis calcule.";
-
-    $("method-box").innerHTML =
-      "<strong>Petit rappel</strong>" +
-      "<p>Tu peux d'abord calculer sans les virgules, puis replacer la virgule dans le résultat. Vérifie que ton résultat est raisonnable.</p>";
-
-    $("method-box").classList.remove("hidden");
-
-    $("work-area").innerHTML =
-      `<div class="mental-question">
-        <span>${String(a).replace(".", ",")} × ${String(b).replace(".", ",")} =</span>
-        <input id="mental-answer" class="mental-answer"
-          inputmode="decimal" type="text" placeholder="Ta réponse"
-          aria-label="Ta réponse">
-      </div>`;
+    makeDecimalMultiplicationExercise();
   }
+}
+
+function formatScaledNumber(value, decimalPlaces) {
+  const digits = String(value).padStart(decimalPlaces + 1, "0");
+  const splitAt = digits.length - decimalPlaces;
+
+  return digits.slice(0, splitAt) + "," + digits.slice(splitAt);
+}
+
+function makeDecimalMultiplicationExercise() {
+  const level = writtenLevel;
+  let integerA;
+  let multiplierDigit;
+  let decimalPlaces;
+  let originalA;
+  let originalB;
+
+  if (level === 1) {
+    integerA = rand(12, 49);
+    multiplierDigit = rand(2, 4);
+    decimalPlaces = 1;
+
+    originalA = formatScaledNumber(integerA, 1);
+    originalB = String(multiplierDigit);
+
+  } else if (level === 2) {
+    integerA = rand(105, 399);
+    multiplierDigit = rand(2, 5);
+    decimalPlaces = 2;
+
+    originalA = formatScaledNumber(integerA, 2);
+    originalB = String(multiplierDigit);
+
+  } else {
+    integerA = rand(12, 35);
+    multiplierDigit = rand(2, 9);
+    decimalPlaces = 2;
+
+    originalA = formatScaledNumber(integerA, 1);
+    originalB = formatScaledNumber(multiplierDigit, 1);
+  }
+
+  const integerResult = integerA * multiplierDigit;
+
+  current = {
+    type: "decimal-mult",
+    level,
+    integerA,
+    multiplierDigit,
+    integerResult,
+    decimalPlaces,
+    result: integerResult / (10 ** decimalPlaces),
+    originalA,
+    originalB
+  };
+
+  $("game-title").textContent = "Pose ta multiplication décimale !";
+
+  $("instruction").textContent =
+    level === 1
+      ? "Multiplie les dixièmes par un nombre entier, puis replace la virgule."
+      : level === 2
+        ? "Multiplie les centièmes par un nombre entier, puis replace la virgule."
+        : "Multiplie les deux nombres sans leurs virgules, puis replace la virgule dans le résultat.";
+
+  $("method-box").innerHTML =
+    "<strong>Petit rappel de la méthode</strong>" +
+    "<p>1. Pour calculer, enlève provisoirement les virgules. " +
+    "2. Pose la multiplication et inscris les retenues. " +
+    "3. Replace la virgule dans le résultat : compte les chiffres après les virgules des deux nombres et additionne-les.</p>";
+
+  $("method-box").classList.remove("hidden");
+  $("column-heads").classList.add("hidden");
+
+  renderDecimalMultiplication();
+}
+
+function renderDecimalMultiplication() {
+  const digits = String(current.integerA).padStart(6, "0").split("");
+  const carries = Array(6).fill(0);
+  let carry = 0;
+
+  for (let i = digits.length - 1; i >= 0; i--) {
+    const total = Number(digits[i]) * current.multiplierDigit + carry;
+    carry = Math.floor(total / 10);
+
+    if (i > 0) {
+      carries[i - 1] = carry;
+    }
+  }
+
+  current.carryByColumn = carries;
+
+  const commaAfter = 6 - current.decimalPlaces - 1;
+  const firstSignificant = digits.findIndex(d => d !== "0");
+
+  const carryRow = `
+    <div class="decimal-mult-label">Retenues (si besoin)</div>
+    <div class="decimal-mult-grid">
+      <span class="dm-sign"></span>
+      ${carries.map((_, i) => `
+        <input class="decimal-mult-carry"
+          inputmode="numeric"
+          maxlength="1"
+          data-dm-carry="${i}"
+          placeholder="·"
+          aria-label="Retenue ${i + 1}">
+      `).join("")}
+    </div>`;
+
+  const numberRow = `
+    <div class="decimal-mult-grid">
+      <span class="dm-sign"></span>
+      ${digits.map((digit, i) => `
+        <span class="dm-number">${
+          i < firstSignificant ? "" : digit
+        }</span>
+      `).join("")}
+    </div>`;
+
+  const multiplierRow = `
+    <div class="decimal-mult-grid">
+      <span class="dm-sign">×</span>
+      ${Array.from({ length: 5 }, () => `<span></span>`).join("")}
+      <span class="dm-number">${current.multiplierDigit}</span>
+    </div>`;
+
+  const answerRow = `
+    <div class="decimal-mult-grid decimal-mult-answer">
+      <span class="dm-sign"></span>
+      ${Array.from({ length: 6 }, (_, i) => `
+        <span class="dm-answer-cell">
+          <input class="decimal-mult-input"
+            inputmode="numeric"
+            maxlength="1"
+            data-dm-answer="${i}"
+            placeholder="?">
+          ${i === commaAfter ? '<b class="dm-comma">,</b>' : ""}
+        </span>
+      `).join("")}
+    </div>`;
+
+  $("work-area").innerHTML = `
+    <div class="decimal-mult-work">
+      <div class="decimal-mult-original">
+        ${current.originalA} × ${current.originalB}
+      </div>
+
+      <p class="decimal-mult-explanation">
+        On calcule d'abord sans les virgules :
+        ${current.integerA} × ${current.multiplierDigit}
+      </p>
+
+      ${carryRow}
+      ${numberRow}
+      ${multiplierRow}
+
+      <div class="dm-rule"></div>
+
+      ${answerRow}
+
+      <p class="decimal-mult-comma-help">
+        La virgule est matérialisée par le petit repère après la bonne colonne.
+      </p>
+    </div>
+  `;
+
+  resetFeedback();
 }
 
 function renderWrittenMultiplication(a, b) {
@@ -775,21 +895,56 @@ function checkMultiplication() {
   }
 
   if (current.type === "decimal-mult") {
-    const v = $("mental-answer")?.value.trim().replace(",", ".");
+    const answerFields = [
+      ...document.querySelectorAll("[data-dm-answer]")
+    ];
 
-    if (!v) {
-      setFeedback("Écris ta réponse avant de vérifier.", false);
+    const answers = answerFields.map(input => input.value.trim());
+
+    if (answers.some(v => v !== "" && !/^\d$/.test(v))) {
+      setFeedback("Écris un seul chiffre par case.", false);
       return;
     }
 
-    const n = Number(v);
-
-    if (!Number.isFinite(n) || Math.abs(n - current.result) > 0.011) {
-      setFeedback("Pas tout à fait. Vérifie ton calcul et la place de la virgule !", false);
+    if (answers.every(v => v === "")) {
+      setFeedback("Complète le résultat avant de vérifier.", false);
       return;
     }
 
-    winChallenge("Bravo ! Tu as réussi cette multiplication décimale.");
+    const enteredResult = Number(
+      answers.map(v => v === "" ? "0" : v).join("")
+    );
+
+    let wrong = enteredResult !== current.integerResult;
+
+    const carryFields = [
+      ...document.querySelectorAll("[data-dm-carry]")
+    ];
+
+    for (const input of carryFields) {
+      const index = Number(input.dataset.dmCarry);
+      const expected = current.carryByColumn[index] || 0;
+      const value = input.value.trim();
+
+      if (expected > 0 && value !== String(expected)) wrong = true;
+      if (expected === 0 && value !== "" && value !== "0") wrong = true;
+    }
+
+    if (wrong) {
+      setFeedback(
+        "Vérifie ton résultat et tes retenues. N'oublie pas la virgule ! 💪",
+        false
+      );
+      return;
+    }
+
+    winChallenge(
+      `Bravo ! Le résultat est ${formatScaledNumber(
+        current.integerResult,
+        current.decimalPlaces
+      )}.`
+    );
+
     return;
   }
 
@@ -803,6 +958,11 @@ function checkMultiplication() {
 
   if (!vals.some(v => v !== "")) {
     setFeedback("Complète les cases du résultat.", false);
+    return;
+  }
+
+  if (vals.some(v => v !== "" && !/^\d$/.test(v))) {
+    setFeedback("Écris un seul chiffre par case.", false);
     return;
   }
 
@@ -919,7 +1079,9 @@ document.querySelectorAll("[data-written]").forEach(b => {
 });
 
 document.querySelectorAll("[data-decimal-mult]").forEach(b => {
-  b.addEventListener("click", () => startDecimalMultiplication(Number(b.dataset.decimalMult)));
+  b.addEventListener("click", () =>
+    startDecimalMultiplication(Number(b.dataset.decimalMult))
+  );
 });
 
 $("review-table").addEventListener("click", reviewCurrentTable);
