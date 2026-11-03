@@ -878,3 +878,21 @@ html {
 input.digit {
   touch-action: manipulation;
 }
+.decimal-carry {
+  width: 100%;
+  min-width: 0;
+  height: 36px;
+  border: 1.5px solid #dedbed;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 900;
+  color: #d17b27;
+  background: #fffaf2;
+  padding: 0;
+}
+
+.decimal-carry:focus {
+  outline: 3px solid #6558d333;
+  border-color: var(--purple);
+}
